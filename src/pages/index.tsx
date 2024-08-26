@@ -1,118 +1,222 @@
-import Image from "next/image";
-import { Inter } from "next/font/google";
+import React, { useState, useEffect, useCallback } from 'react';
+import { GetServerSideProps, NextPage } from 'next';
+import { getCharacters, Character, ApiResponse } from '../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { Moon, Sun, Search } from 'lucide-react';
+import debounce from 'lodash/debounce';
 
-const inter = Inter({ subsets: ["latin"] });
-
-export default function Home() {
-  return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+interface HomeProps {
+  initialData: ApiResponse;
+  initialStatus: string;
+  initialGender: string;
+  initialName: string;
 }
+
+const Home: NextPage<HomeProps> = ({ initialData, initialStatus, initialGender, initialName }) => {
+  const [characters, setCharacters] = useState<Character[]>(initialData.results);
+  const [status, setStatus] = useState<string>(initialStatus);
+  const [gender, setGender] = useState<string>(initialGender);
+  const [searchTerm, setSearchTerm] = useState<string>(initialName);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const router = useRouter();
+
+  const handleFilter = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const filteredData = await getCharacters(1, { status, gender, name: searchTerm });
+      setCharacters(filteredData.results);
+      
+      router.push({
+        pathname: '/',
+        query: { 
+          ...(status && { status }), 
+          ...(gender && { gender }),
+          ...(searchTerm && { name: searchTerm })
+        },
+      }, undefined, { shallow: true });
+
+    } catch (error) {
+      console.error('Error filtering characters:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [status, gender, searchTerm, router]);
+
+  const debouncedFilter = useCallback(
+    debounce(() => {
+      handleFilter();
+    }, 300),
+    [handleFilter]
+  );
+
+  useEffect(() => {
+    debouncedFilter();
+    return () => {
+      debouncedFilter.cancel();
+    };
+  }, [status, gender, searchTerm, debouncedFilter]);
+
+  return (
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+      <Head>
+        <title>Rick and Morty Characters</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </Head>
+      <div className="container mx-auto py-8 px-4">
+        <motion.h1 
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-4xl md:text-5xl font-extrabold text-center mb-8"
+        >
+          Rick and Morty Characters
+        </motion.h1>
+        
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 space-y-4 md:space-y-0 md:space-x-4">
+          <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
+            <select 
+              className={`w-full sm:w-auto px-4 py-2 rounded-md ${
+                darkMode 
+                  ? 'bg-gray-800 text-white border border-gray-700' 
+                  : 'bg-white text-gray-900 border border-gray-300 shadow-sm'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+              value={status} 
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="">All Status</option>
+              <option value="alive">Alive</option>
+              <option value="dead">Dead</option>
+              <option value="unknown">Unknown</option>
+            </select>
+            <select 
+              className={`w-full sm:w-auto px-4 py-2 rounded-md ${
+                darkMode 
+                  ? 'bg-gray-800 text-white border border-gray-700' 
+                  : 'bg-white text-gray-900 border border-gray-300 shadow-sm'
+              } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+              value={gender} 
+              onChange={(e) => setGender(e.target.value)}
+            >
+              <option value="">All Genders</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="genderless">Genderless</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+          <div className="flex items-center space-x-4 w-full md:w-auto">
+            <div className="relative flex-grow">
+              <input
+                type="text"
+                placeholder="Search characters..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 rounded-md ${
+                  darkMode 
+                    ? 'bg-gray-800 text-white border border-gray-700' 
+                    : 'bg-white text-gray-900 border border-gray-300 shadow-sm'
+                } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            </div>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-full ${darkMode ? 'bg-indigo-400 text-gray-900' : 'bg-indigo-600 text-white'}`}
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {darkMode ? <Sun size={24} /> : <Moon size={24} />}
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div
+              key="loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex justify-center items-center h-64"
+            >
+              <div className="loader"></div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="characters"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              {characters.map((character) => (
+                <motion.div 
+                  key={character.id} 
+                  className={`rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 ease-in-out ${darkMode ? 'bg-gray-800' : 'bg-white'}`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <img src={character.image} alt={character.name} className="w-full h-48 sm:h-56 object-cover" />
+                  <div className="p-4 sm:p-6">
+                    <h2 className="text-xl sm:text-2xl font-bold mb-2 truncate">{character.name}</h2>
+                    <p className="text-sm sm:text-base mb-1">
+                      <span className="font-semibold">Status:</span> 
+                      <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        character.status === 'Alive' ? 'bg-green-100 text-green-800' : 
+                        character.status === 'Dead' ? 'bg-red-100 text-red-800' : 
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {character.status}
+                      </span>
+                    </p>
+                    <p className="text-sm sm:text-base mb-1"><span className="font-semibold">Species:</span> {character.species}</p>
+                    <p className="text-sm sm:text-base"><span className="font-semibold">Gender:</span> {character.gender}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const { status, gender, name } = context.query;
+    const initialStatus = typeof status === 'string' ? status : '';
+    const initialGender = typeof gender === 'string' ? gender : '';
+    const initialName = typeof name === 'string' ? name : '';
+
+    const initialData = await getCharacters(1, { 
+      status: initialStatus, 
+      gender: initialGender,
+      name: initialName
+    });
+
+    return { 
+      props: { 
+        initialData,
+        initialStatus,
+        initialGender,
+        initialName
+      } 
+    };
+  } catch (error) {
+    console.error('Error fetching initial data:', error);
+    return { 
+      props: { 
+        initialData: { info: { count: 0, pages: 0, next: null, prev: null }, results: [] },
+        initialStatus: '',
+        initialGender: '',
+        initialName: ''
+      } 
+    };
+  }
+};
+
+export default Home;
