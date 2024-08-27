@@ -4,16 +4,12 @@ import { getCharacters, Character, ApiResponse } from '../services/api';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { Moon, Sun, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Moon, Sun, Search } from 'lucide-react';
 import debounce from 'lodash/debounce';
 import { useTheme } from 'next-themes';
 
 interface HomeProps {
   initialData: ApiResponse;
-  initialStatus: string;
-  initialGender: string;
-  initialName: string;
-  currentPage: number;
 }
 
 const SkeletonCard: React.FC = () => (
@@ -53,11 +49,12 @@ const cardVariants: Variants = {
   }
 };
 
-const Home: NextPage<HomeProps> = ({ initialData, initialStatus, initialGender, initialName, currentPage }) => {
-  const [characters, setCharacters] = useState<Character[]>(initialData.results);
-  const [status, setStatus] = useState<string>(initialStatus);
-  const [gender, setGender] = useState<string>(initialGender);
-  const [searchTerm, setSearchTerm] = useState<string>(initialName);
+const Home: NextPage<HomeProps> = ({ initialData }) => {
+  const [allCharacters, setAllCharacters] = useState<Character[]>(initialData.results);
+  const [filteredCharacters, setFilteredCharacters] = useState<Character[]>(initialData.results);
+  const [status, setStatus] = useState<string>('');
+  const [gender, setGender] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { theme, setTheme } = useTheme();
   const router = useRouter();
@@ -67,28 +64,40 @@ const Home: NextPage<HomeProps> = ({ initialData, initialStatus, initialGender, 
     setMounted(true);
   }, []);
 
+  const applyFilters = useCallback(() => {
+    let result = allCharacters;
+    
+    if (status) {
+      result = result.filter(char => char.status.toLowerCase() === status.toLowerCase());
+    }
+    
+    if (gender) {
+      result = result.filter(char => char.gender.toLowerCase() === gender.toLowerCase());
+    }
+    
+    if (searchTerm) {
+      result = result.filter(char => char.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    
+    setFilteredCharacters(result);
+  }, [allCharacters, status, gender, searchTerm]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
   const handleFilter = useCallback(async () => {
     setIsLoading(true);
     try {
-      const filteredData = await getCharacters(currentPage, { status, gender, name: searchTerm });
-      setCharacters(filteredData.results);
-      
-      router.push({
-        pathname: '/',
-        query: { 
-          page: currentPage,
-          ...(status && { status }), 
-          ...(gender && { gender }),
-          ...(searchTerm && { name: searchTerm })
-        },
-      }, undefined, { shallow: true });
-
+      const newData = await getCharacters(1, { name: searchTerm });
+      setAllCharacters(newData.results);
     } catch (error) {
-      console.error('Error filtering characters:', error);
+      console.error('Error fetching characters:', error);
+      setAllCharacters([]);
     } finally {
       setIsLoading(false);
     }
-  }, [status, gender, searchTerm, currentPage, router]);
+  }, [searchTerm]);
 
   const debouncedFilter = useCallback(
     debounce(() => {
@@ -102,17 +111,7 @@ const Home: NextPage<HomeProps> = ({ initialData, initialStatus, initialGender, 
     return () => {
       debouncedFilter.cancel();
     };
-  }, [status, gender, searchTerm, currentPage, debouncedFilter]);
-
-  const handlePageChange = (newPage: number) => {
-    router.push({
-      pathname: '/',
-      query: { 
-        ...router.query,
-        page: newPage 
-      },
-    });
-  };
+  }, [searchTerm, debouncedFilter]);
 
   if (!mounted) return null;
 
@@ -225,15 +224,15 @@ const Home: NextPage<HomeProps> = ({ initialData, initialStatus, initialGender, 
               ))}
             </motion.div>
           ) : (
-            <>
-              <motion.div 
-                key="characters"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-              >
-                {characters.map((character) => (
+            <motion.div 
+              key="characters"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              {filteredCharacters.length > 0 ? (
+                filteredCharacters.map((character) => (
                   <motion.div 
                     key={character.id}
                     variants={cardVariants}
@@ -261,26 +260,11 @@ const Home: NextPage<HomeProps> = ({ initialData, initialStatus, initialGender, 
                       <p className="text-sm sm:text-base"><span className="font-semibold">Gender:</span> {character.gender}</p>
                     </div>
                   </motion.div>
-                ))}
-              </motion.div>
-              <div className="mt-8 flex justify-center items-center space-x-4">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-full bg-blue-500 text-white disabled:opacity-50 transition-opacity duration-300"
-                >
-                  <ChevronLeft size={24} />
-                </button>
-                <span>Page {currentPage} of {initialData.info.pages}</span>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === initialData.info.pages}
-                  className="p-2 rounded-full bg-blue-500 text-white disabled:opacity-50 transition-opacity duration-300"
-                >
-                  <ChevronRight size={24} />
-                </button>
-              </div>
-            </>
+                ))
+              ) : (
+                <div className="col-span-full text-center text-xl">No characters found</div>
+              )}
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -288,27 +272,12 @@ const Home: NextPage<HomeProps> = ({ initialData, initialStatus, initialGender, 
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async () => {
   try {
-    const { status, gender, name, page } = context.query;
-    const currentPage = typeof page === 'string' ? parseInt(page) : 1;
-    const initialStatus = typeof status === 'string' ? status : '';
-    const initialGender = typeof gender === 'string' ? gender : '';
-    const initialName = typeof name === 'string' ? name : '';
-
-    const initialData = await getCharacters(currentPage, { 
-      status: initialStatus, 
-      gender: initialGender,
-      name: initialName
-    });
-
+    const initialData = await getCharacters(1);
     return { 
       props: { 
         initialData,
-        initialStatus,
-        initialGender,
-        initialName,
-        currentPage
       } 
     };
   } catch (error) {
@@ -316,10 +285,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return { 
       props: { 
         initialData: { info: { count: 0, pages: 0, next: null, prev: null }, results: [] },
-        initialStatus: '',
-        initialGender: '',
-        initialName: '',
-        currentPage: 1
       } 
     };
   }
